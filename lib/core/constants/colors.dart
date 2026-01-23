@@ -1,0 +1,51 @@
+import 'package:flutter/material.dart';
+
+/// Art Cat colour palette - warm, playful, cat-themed
+class ArtCatColors {
+  ArtCatColors._();
+
+  // Primary colours
+  static const Color primary = Color(0xFFFF8C42);       // Warm orange
+  static const Color primaryLight = Color(0xFFFFAB6B);
+  static const Color primaryDark = Color(0xFFE67332);
+
+  // Secondary colours
+  static const Color secondary = Color(0xFF9B7EDE);     // Soft purple
+  static const Color secondaryLight = Color(0xFFB8A4E8);
+  static const Color secondaryDark = Color(0xFF7A5DC7);
+
+  // Background colours
+  static const Color background = Color(0xFFFFF8F0);    // Cream
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = Color(0xFFFFF0E6);
+
+  // Text colours
+  static const Color textPrimary = Color(0xFF2D2D2D);
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color textLight = Color(0xFF999999);
+
+  // Canvas colours
+  static const Color canvasBackground = Color(0xFFFFFFFF);
+  static const Color canvasGrid = Color(0xFFE8E8E8);
+
+  // Status colours
+  static const Color success = Color(0xFF4CAF50);
+  static const Color warning = Color(0xFFFFC107);
+  static const Color error = Color(0xFFE53935);
+
+  // Drawing palette - basic colours
+  static const List<Color> basicPalette = [
+    Color(0xFF000000),  // Black
+    Color(0xFFFFFFFF),  // White
+    Color(0xFFE53935),  // Red
+    Color(0xFFFF8C42),  // Orange
+    Color(0xFFFFEB3B),  // Yellow
+    Color(0xFF4CAF50),  // Green
+    Color(0xFF2196F3),  // Blue
+    Color(0xFF9B7EDE),  // Purple
+    Color(0xFFFF4081),  // Pink
+    Color(0xFF795548),  // Brown
+    Color(0xFF9E9E9E),  // Grey
+    Color(0xFF00BCD4),  // Cyan
+  ];
+}
