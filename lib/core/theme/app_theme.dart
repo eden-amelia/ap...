@@ -21,7 +21,7 @@ class ArtCatTheme {
         elevation: 0,
         centerTitle: true,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: ArtCatColors.surface,
         elevation: 2,
         shape: RoundedRectangleBorder(
