@@ -56,12 +56,18 @@ class CanvasProvider extends ChangeNotifier {
   }
 
   /// Start drawing a stroke
-  void startStroke(Offset point) {
+  /// [pressure] 0–1 from stylus/touch; null uses uniform width
+  void startStroke(Offset point, {double? pressure}) {
+    final baseWidth =
+        _selectedTool == ToolType.eraser ? _brushSize * 2 : _brushSize;
+    final pressureWidth = _pressureToWidth(baseWidth, pressure);
+
     _currentStroke = Stroke(
       id: _uuid.v4(),
       points: [point],
       color: _selectedTool == ToolType.eraser ? Colors.white : _selectedColor,
-      width: _selectedTool == ToolType.eraser ? _brushSize * 2 : _brushSize,
+      width: baseWidth,
+      widths: pressure != null ? [pressureWidth] : null,
       toolType: _selectedTool,
       shapeType: _selectedTool == ToolType.shape ? _selectedShape : null,
     );
@@ -69,10 +75,25 @@ class CanvasProvider extends ChangeNotifier {
   }
 
   /// Continue drawing the current stroke
-  void updateStroke(Offset point) {
+  void updateStroke(Offset point, {double? pressure}) {
     if (_currentStroke == null) return;
-    _currentStroke = _currentStroke!.copyWithPoint(point);
+    final baseWidth =
+        _currentStroke!.toolType == ToolType.eraser
+            ? _brushSize * 2
+            : _brushSize;
+    final pressureWidth = _pressureToWidth(baseWidth, pressure);
+
+    _currentStroke = _currentStroke!.copyWithPoint(
+      point,
+      pressureWidth: pressure != null ? pressureWidth : null,
+    );
     notifyListeners();
+  }
+
+  double _pressureToWidth(double baseWidth, double? pressure) {
+    if (pressure == null) return baseWidth;
+    // Map pressure (0–1) to width: min 25%, max 100% of base (Procreate-style)
+    return baseWidth * (0.25 + 0.75 * pressure.clamp(0.0, 1.0));
   }
 
   /// Finish the current stroke
