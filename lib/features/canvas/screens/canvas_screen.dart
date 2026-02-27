@@ -55,36 +55,39 @@ class _CanvasScreenState extends State<CanvasScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Drawing canvas
-          const Positioned.fill(
-            child: DrawingCanvas(),
-          ),
-          // Art Cat mascot - draggable, shows tool-specific help when tapped
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final size = Size(constraints.maxWidth, constraints.maxHeight);
-              final defaultPos = Offset(
-                size.width - 16 - _mascotSize,
-                size.height - 220 - _mascotSize,
-              );
-              final position = _mascotPosition ?? defaultPos;
-              final clampedLeft = position.dx.clamp(0.0, size.width - _mascotSize);
-              final clampedTop = position.dy.clamp(0.0, size.height - _mascotSize);
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          final defaultPos = Offset(
+            size.width - 16 - _mascotSize,
+            size.height - 220 - _mascotSize,
+          );
+          final position = _mascotPosition ?? defaultPos;
+          final clampedLeft =
+              position.dx.clamp(0.0, size.width - _mascotSize);
+          final clampedTop = position.dy.clamp(0.0, size.height - _mascotSize);
 
-              return Positioned(
+          return Stack(
+            children: [
+              // Drawing canvas - fills the stack, receives pointer events
+              const Positioned.fill(
+                child: DrawingCanvas(),
+              ),
+              // Art Cat mascot - draggable, only this small area blocks touches
+              Positioned(
                 left: clampedLeft,
                 top: clampedTop,
                 child: GestureDetector(
                   onPanStart: (_) {
                     if (_mascotPosition == null) {
-                      setState(() => _mascotPosition = Offset(clampedLeft, clampedTop));
+                      setState(() =>
+                          _mascotPosition = Offset(clampedLeft, clampedTop));
                     }
                   },
                   onPanUpdate: (details) {
                     setState(() {
-                      final current = _mascotPosition ?? Offset(clampedLeft, clampedTop);
+                      final current =
+                          _mascotPosition ?? Offset(clampedLeft, clampedTop);
                       _mascotPosition = Offset(
                         (current.dx + details.delta.dx)
                             .clamp(0.0, size.width - _mascotSize),
@@ -102,18 +105,20 @@ class _CanvasScreenState extends State<CanvasScreen> {
                         ToolType.shape: 'shape',
                         ToolType.fill: 'fill',
                       };
-                      final key = tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
+                      final key =
+                          tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
                       return ArtCatMascot(
                         size: _mascotSize,
-                        onTap: () => mascotProvider.showContextualTooltip(key),
+                        onTap: () =>
+                            mascotProvider.showContextualTooltip(key),
                       );
                     },
                   ),
                 ),
-              );
-            },
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: const ToolsPanel(),
     );
