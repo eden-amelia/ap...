@@ -34,6 +34,12 @@ class CanvasProvider extends ChangeNotifier {
   double _brushSize = ArtCatTools.defaultBrushSize;
   double get brushSize => _brushSize;
 
+  double _brushOpacity = 1.0;
+  double get brushOpacity => _brushOpacity;
+
+  double _stabilisation = 50;
+  double get stabilisation => _stabilisation;
+
   ShapeType _selectedShape = ShapeType.circle;
   ShapeType get selectedShape => _selectedShape;
 
@@ -56,18 +62,21 @@ class CanvasProvider extends ChangeNotifier {
   }
 
   /// Start drawing a stroke
-  /// [pressure] 0–1 from stylus/touch; null uses uniform width
-  void startStroke(Offset point, {double? pressure}) {
+  /// [pressure] 0–1 from stylus; null uses velocity-based or uniform width
+  /// [velocity] pixels/ms for velocity-based width (Procreate-style, works on desktop)
+  void startStroke(Offset point, {double? pressure, double? velocity}) {
     final baseWidth =
         _selectedTool == ToolType.eraser ? _brushSize * 2 : _brushSize;
-    final pressureWidth = _pressureToWidth(baseWidth, pressure);
+    final effectiveWidth = _effectiveWidth(baseWidth, pressure, velocity);
+    final useVariableWidth = pressure != null || velocity != null;
 
     _currentStroke = Stroke(
       id: _uuid.v4(),
       points: [point],
       color: _selectedTool == ToolType.eraser ? Colors.white : _selectedColor,
       width: baseWidth,
-      widths: pressure != null ? [pressureWidth] : null,
+      opacity: _brushOpacity,
+      widths: useVariableWidth ? [effectiveWidth] : null,
       toolType: _selectedTool,
       shapeType: _selectedTool == ToolType.shape ? _selectedShape : null,
     );
@@ -75,25 +84,43 @@ class CanvasProvider extends ChangeNotifier {
   }
 
   /// Continue drawing the current stroke
-  void updateStroke(Offset point, {double? pressure}) {
+  void updateStroke(Offset point, {double? pressure, double? velocity}) {
     if (_currentStroke == null) return;
     final baseWidth =
         _currentStroke!.toolType == ToolType.eraser
             ? _brushSize * 2
             : _brushSize;
-    final pressureWidth = _pressureToWidth(baseWidth, pressure);
+    final effectiveWidth = _effectiveWidth(baseWidth, pressure, velocity);
+    final useVariableWidth = pressure != null || velocity != null;
 
     _currentStroke = _currentStroke!.copyWithPoint(
       point,
-      pressureWidth: pressure != null ? pressureWidth : null,
+      pressureWidth: useVariableWidth ? effectiveWidth : null,
     );
     notifyListeners();
   }
 
-  double _pressureToWidth(double baseWidth, double? pressure) {
-    if (pressure == null) return baseWidth;
-    // Map pressure (0–1) to width: min 25%, max 100% of base (Procreate-style)
-    return baseWidth * (0.25 + 0.75 * pressure.clamp(0.0, 1.0));
+  double _effectiveWidth(double baseWidth, double? pressure, double? velocity) {
+    if (pressure != null) {
+      return baseWidth * (0.25 + 0.75 * pressure.clamp(0.0, 1.0));
+    }
+    if (velocity != null) {
+      // Procreate-style: fast strokes = thinner, slow = thicker
+      const scale = 2.0;
+      final factor = 1 / (1 + velocity * scale);
+      return baseWidth * (0.35 + 0.65 * factor);
+    }
+    return baseWidth;
+  }
+
+  void setBrushOpacity(double opacity) {
+    _brushOpacity = opacity.clamp(0.0, 1.0);
+    notifyListeners();
+  }
+
+  void setStabilisation(double value) {
+    _stabilisation = value.clamp(0.0, 100.0);
+    notifyListeners();
   }
 
   /// Finish the current stroke

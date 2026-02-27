@@ -42,6 +42,11 @@ class MascotTooltips {
       message: 'Draw smooth lines! Adjust the size with the slider.',
       emoji: '✏️',
     ),
+    'pencil': MascotTooltip(
+      title: 'Pencil Tool',
+      message: 'Softer, sketchier strokes—great for rough ideas!',
+      emoji: '✒️',
+    ),
     'eraser': MascotTooltip(
       title: 'Eraser',
       message: 'Oops! Use this to erase mistakes.',
@@ -51,6 +56,16 @@ class MascotTooltips {
       title: 'Shapes',
       message: 'Drag to draw perfect circles, squares, and triangles!',
       emoji: '⬡',
+    ),
+    'fill': MascotTooltip(
+      title: 'Fill Tool',
+      message: 'Tap to fill enclosed areas with your selected colour.',
+      emoji: '🪣',
+    ),
+    'undo': MascotTooltip(
+      title: 'Undo & Redo',
+      message: 'Made a mistake? Use undo. Two-finger tap on the canvas also undoes!',
+      emoji: '↩️',
     ),
     'color': MascotTooltip(
       title: 'Colours',

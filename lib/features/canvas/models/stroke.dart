@@ -8,6 +8,7 @@ class Stroke {
   final List<Offset> points;
   final Color color;
   final double width;
+  final double opacity;
   /// Per-point widths for pressure-sensitive strokes. When null, uses uniform [width].
   final List<double>? widths;
   final ToolType toolType;
@@ -18,6 +19,7 @@ class Stroke {
     required this.points,
     required this.color,
     required this.width,
+    this.opacity = 1.0,
     this.widths,
     required this.toolType,
     this.shapeType,
@@ -25,16 +27,23 @@ class Stroke {
 
   /// Create a copy with additional point (and optional pressure-based width)
   Stroke copyWithPoint(Offset point, {double? pressureWidth}) {
-    final newWidths = pressureWidth != null
-        ? [...?widths, pressureWidth]
-        : widths != null
-            ? [...widths!, width]
-            : null;
+    List<double>? newWidths;
+    if (pressureWidth != null) {
+      if (widths != null) {
+        newWidths = [...widths!, pressureWidth];
+      } else {
+        // Backfill uniform width for existing points when switching to variable
+        newWidths = [...List.filled(points.length, width), pressureWidth];
+      }
+    } else if (widths != null) {
+      newWidths = [...widths!, width];
+    }
     return Stroke(
       id: id,
       points: [...points, point],
       color: color,
       width: width,
+      opacity: opacity,
       widths: newWidths,
       toolType: toolType,
       shapeType: shapeType,
@@ -47,6 +56,7 @@ class Stroke {
     List<Offset>? points,
     Color? color,
     double? width,
+    double? opacity,
     List<double>? widths,
     ToolType? toolType,
     ShapeType? shapeType,
@@ -56,6 +66,7 @@ class Stroke {
       points: points ?? this.points,
       color: color ?? this.color,
       width: width ?? this.width,
+      opacity: opacity ?? this.opacity,
       widths: widths ?? this.widths,
       toolType: toolType ?? this.toolType,
       shapeType: shapeType ?? this.shapeType,
@@ -77,6 +88,7 @@ class Stroke {
       'points': points.map((p) => {'dx': p.dx, 'dy': p.dy}).toList(),
       'color': color.value,
       'width': width,
+      'opacity': opacity,
       if (widths != null) 'widths': widths,
       'toolType': toolType.index,
       'shapeType': shapeType?.index,
@@ -92,6 +104,7 @@ class Stroke {
           .toList(),
       color: Color(json['color'] as int),
       width: json['width'] as double,
+      opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
       widths: json['widths'] != null
           ? (json['widths'] as List).map((w) => (w as num).toDouble()).toList()
           : null,

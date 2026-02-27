@@ -63,6 +63,58 @@ class ToolsPanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                // Procreate-style: Brush opacity and Stabilisation
+                Row(
+                  children: [
+                    Expanded(
+                      child: Tooltip(
+                        message: 'Brush opacity',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.opacity, size: 18),
+                            Expanded(
+                              child: Slider(
+                                value: canvasProvider.brushOpacity,
+                                min: 0.1,
+                                max: 1,
+                                onChanged: canvasProvider.setBrushOpacity,
+                                activeColor: ArtCatColors.primary,
+                              ),
+                            ),
+                            SizedBox(
+                              width: 28,
+                              child: Text(
+                                '${(canvasProvider.brushOpacity * 100).round()}%',
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Tooltip(
+                        message: 'Stabilisation (smoothing)',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.straighten, size: 18),
+                            Expanded(
+                              child: Slider(
+                                value: canvasProvider.stabilisation,
+                                min: 0,
+                                max: 100,
+                                onChanged: canvasProvider.setStabilisation,
+                                activeColor: ArtCatColors.secondary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 // Brush size and actions row
                 Row(
                   children: [

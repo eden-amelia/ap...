@@ -4,6 +4,7 @@ import '../../../core/constants/colors.dart';
 import '../../mascot/providers/mascot_provider.dart';
 import '../../mascot/widgets/art_cat_mascot.dart';
 import '../../../shared/storage/local_storage.dart';
+import '../../../shared/widgets/help_sheet.dart';
 
 /// Home screen with navigation to main features
 class HomeScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // Header with help button
                   Row(
                     children: [
                       Container(
@@ -57,15 +58,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'ART CAT',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: ArtCatColors.primary,
-                                ),
+                          Row(
+                            children: [
+                              Text(
+                                'ART CAT',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: ArtCatColors.primary,
+                                    ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.help_outline),
+                                onPressed: () => _showHelpDialog(context),
+                                tooltip: 'Help',
+                              ),
+                            ],
                           ),
                           Text(
                             'Create something purrfect!',
@@ -134,6 +144,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     emoji: '💡',
                     tip: 'Lock words in the prompt generator to keep them.',
                   ),
+                  const SizedBox(height: 8),
+                  _TipCard(
+                    emoji: '🪣',
+                    tip: 'Use the fill tool to colour in enclosed areas.',
+                  ),
+                  const SizedBox(height: 8),
+                  _TipCard(
+                    emoji: '↩️',
+                    tip: 'Two-finger tap on the canvas to undo—Procreate style!',
+                  ),
 
                   const SizedBox(height: 100),
                 ],
@@ -156,6 +176,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    showHelpSheet(context);
   }
 }
 

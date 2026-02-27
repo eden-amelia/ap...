@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/constants/tools.dart';
 import '../../../shared/storage/local_storage.dart';
+import '../../../shared/widgets/help_sheet.dart';
 import '../../mascot/providers/mascot_provider.dart';
 import '../../mascot/widgets/art_cat_mascot.dart';
 import '../providers/canvas_provider.dart';
@@ -51,16 +53,24 @@ class CanvasScreen extends StatelessWidget {
           const Positioned.fill(
             child: DrawingCanvas(),
           ),
-          // Art Cat mascot
+          // Art Cat mascot - shows tool-specific help when tapped
           Positioned(
             right: 16,
             bottom: 220,
-            child: Consumer<MascotProvider>(
-              builder: (context, mascotProvider, _) => ArtCatMascot(
-                onTap: () {
-                  mascotProvider.showContextualTooltip('canvas');
-                },
-              ),
+            child: Consumer2<CanvasProvider, MascotProvider>(
+              builder: (context, canvasProvider, mascotProvider, _) {
+                final tooltipKeys = {
+                  ToolType.pen: 'pen',
+                  ToolType.pencil: 'pencil',
+                  ToolType.eraser: 'eraser',
+                  ToolType.shape: 'shape',
+                  ToolType.fill: 'fill',
+                };
+                final key = tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
+                return ArtCatMascot(
+                  onTap: () => mascotProvider.showContextualTooltip(key),
+                );
+              },
             ),
           ),
         ],
@@ -135,6 +145,14 @@ class CanvasScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ListTile(
+              leading: const Icon(Icons.help_outline),
+              title: const Text('Help'),
+              onTap: () {
+                Navigator.pop(context);
+                showHelpSheet(context);
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.add),
               title: const Text('New canvas'),

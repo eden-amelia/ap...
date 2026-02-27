@@ -21,6 +21,8 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
   int? _drawingPointer;
   int _pointersWhenTwoFingerStarted = 0;
   DateTime? _twoFingerDownTime;
+  Offset? _lastPoint;
+  DateTime? _lastMoveTime;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
               painter: CanvasPainter(
                 strokes: canvasProvider.artwork.strokes,
                 currentStroke: canvasProvider.currentStroke,
+                stabilisation: canvasProvider.stabilisation,
               ),
               size: Size.infinite,
             ),
@@ -59,6 +62,8 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
 
     if (_drawingPointer == null && _activePointers.length == 1) {
       _drawingPointer = event.pointer;
+      _lastPoint = event.localPosition;
+      _lastMoveTime = DateTime.now();
       final pressure = _getPressure(event);
       provider.startStroke(event.localPosition, pressure: pressure);
     }
@@ -67,18 +72,33 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
   void _handlePointerMove(PointerMoveEvent event, CanvasProvider provider) {
     if (event.pointer == _drawingPointer) {
       final pressure = _getPressure(event);
-      provider.updateStroke(event.localPosition, pressure: pressure);
+      double? velocity;
+      if (pressure == null && _lastPoint != null && _lastMoveTime != null) {
+        final now = DateTime.now();
+        final dt = now.difference(_lastMoveTime!).inMicroseconds / 1000.0;
+        if (dt > 0) {
+          final dx = event.localPosition.dx - _lastPoint!.dx;
+          final dy = event.localPosition.dy - _lastPoint!.dy;
+          final distance = math.sqrt(dx * dx + dy * dy);
+          velocity = distance / dt;
+        }
+      }
+      _lastPoint = event.localPosition;
+      _lastMoveTime = DateTime.now();
+      provider.updateStroke(event.localPosition, pressure: pressure, velocity: velocity);
     }
   }
 
   void _handlePointerUp(
     BuildContext context,
-    PointerUpEvent event,
+    PointerEvent event,
     CanvasProvider provider,
   ) {
     if (event.pointer == _drawingPointer) {
       provider.endStroke();
       _drawingPointer = null;
+      _lastPoint = null;
+      _lastMoveTime = null;
     }
 
     _activePointers.remove(event.pointer);
@@ -109,10 +129,12 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
 class CanvasPainter extends CustomPainter {
   final List<Stroke> strokes;
   final Stroke? currentStroke;
+  final double stabilisation;
 
   CanvasPainter({
     required this.strokes,
     this.currentStroke,
+    this.stabilisation = 50,
   });
 
   @override
@@ -133,7 +155,7 @@ class CanvasPainter extends CustomPainter {
 
   void _drawStroke(Canvas canvas, Stroke stroke) {
     final paint = Paint()
-      ..color = stroke.color
+      ..color = stroke.color.withOpacity(stroke.color.opacity * stroke.opacity)
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke
@@ -175,7 +197,9 @@ class CanvasPainter extends CustomPainter {
   }
 
   /// Centripetal Catmull-Rom spline - Procreate-style smooth curves
-  List<Offset> _catmullRomSpline(List<Offset> points, {int divisionsPerSegment = 12}) {
+  /// Stabilisation 0–100 controls smoothing (higher = smoother)
+  List<Offset> _catmullRomSpline(List<Offset> points) {
+    final divisionsPerSegment = 4 + (stabilisation / 100 * 20).round();
     if (points.length < 2) return points;
     if (points.length == 2) return points;
 
@@ -334,6 +358,7 @@ class CanvasPainter extends CustomPainter {
   @override
   bool shouldRepaint(CanvasPainter oldDelegate) {
     return strokes != oldDelegate.strokes ||
-        currentStroke != oldDelegate.currentStroke;
+        currentStroke != oldDelegate.currentStroke ||
+        stabilisation != oldDelegate.stabilisation;
   }
 }
