@@ -11,8 +11,16 @@ import '../widgets/drawing_canvas.dart';
 import '../widgets/tools_panel.dart';
 
 /// Main canvas screen for drawing
-class CanvasScreen extends StatelessWidget {
+class CanvasScreen extends StatefulWidget {
   const CanvasScreen({super.key});
+
+  @override
+  State<CanvasScreen> createState() => _CanvasScreenState();
+}
+
+class _CanvasScreenState extends State<CanvasScreen> {
+  static const double _mascotSize = 60;
+  Offset? _mascotPosition;
 
   @override
   Widget build(BuildContext context) {
@@ -53,25 +61,57 @@ class CanvasScreen extends StatelessWidget {
           const Positioned.fill(
             child: DrawingCanvas(),
           ),
-          // Art Cat mascot - shows tool-specific help when tapped
-          Positioned(
-            right: 16,
-            bottom: 220,
-            child: Consumer2<CanvasProvider, MascotProvider>(
-              builder: (context, canvasProvider, mascotProvider, _) {
-                final tooltipKeys = {
-                  ToolType.pen: 'pen',
-                  ToolType.pencil: 'pencil',
-                  ToolType.eraser: 'eraser',
-                  ToolType.shape: 'shape',
-                  ToolType.fill: 'fill',
-                };
-                final key = tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
-                return ArtCatMascot(
-                  onTap: () => mascotProvider.showContextualTooltip(key),
-                );
-              },
-            ),
+          // Art Cat mascot - draggable, shows tool-specific help when tapped
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final size = Size(constraints.maxWidth, constraints.maxHeight);
+              final defaultPos = Offset(
+                size.width - 16 - _mascotSize,
+                size.height - 220 - _mascotSize,
+              );
+              final position = _mascotPosition ?? defaultPos;
+              final clampedLeft = position.dx.clamp(0.0, size.width - _mascotSize);
+              final clampedTop = position.dy.clamp(0.0, size.height - _mascotSize);
+
+              return Positioned(
+                left: clampedLeft,
+                top: clampedTop,
+                child: GestureDetector(
+                  onPanStart: (_) {
+                    if (_mascotPosition == null) {
+                      setState(() => _mascotPosition = Offset(clampedLeft, clampedTop));
+                    }
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      final current = _mascotPosition ?? Offset(clampedLeft, clampedTop);
+                      _mascotPosition = Offset(
+                        (current.dx + details.delta.dx)
+                            .clamp(0.0, size.width - _mascotSize),
+                        (current.dy + details.delta.dy)
+                            .clamp(0.0, size.height - _mascotSize),
+                      );
+                    });
+                  },
+                  child: Consumer2<CanvasProvider, MascotProvider>(
+                    builder: (context, canvasProvider, mascotProvider, _) {
+                      final tooltipKeys = {
+                        ToolType.pen: 'pen',
+                        ToolType.pencil: 'pencil',
+                        ToolType.eraser: 'eraser',
+                        ToolType.shape: 'shape',
+                        ToolType.fill: 'fill',
+                      };
+                      final key = tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
+                      return ArtCatMascot(
+                        size: _mascotSize,
+                        onTap: () => mascotProvider.showContextualTooltip(key),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
