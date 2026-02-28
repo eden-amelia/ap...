@@ -8,6 +8,8 @@ class Artwork {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? thumbnailPath;
+  /// Optional prompt when artwork was started from Art Prompts
+  final String? prompt;
 
   const Artwork({
     required this.id,
@@ -16,10 +18,15 @@ class Artwork {
     required this.createdAt,
     required this.updatedAt,
     this.thumbnailPath,
+    this.prompt,
   });
 
   /// Create a new empty artwork
-  factory Artwork.empty({required String id, String title = 'Untitled'}) {
+  factory Artwork.empty({
+    required String id,
+    String title = 'Untitled',
+    String? prompt,
+  }) {
     final now = DateTime.now();
     return Artwork(
       id: id,
@@ -27,6 +34,7 @@ class Artwork {
       strokes: const [],
       createdAt: now,
       updatedAt: now,
+      prompt: prompt,
     );
   }
 
@@ -38,6 +46,7 @@ class Artwork {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? thumbnailPath,
+    String? prompt,
   }) {
     return Artwork(
       id: id ?? this.id,
@@ -46,6 +55,7 @@ class Artwork {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      prompt: prompt ?? this.prompt,
     );
   }
 
@@ -74,6 +84,7 @@ class Artwork {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'thumbnailPath': thumbnailPath,
+      'prompt': prompt,
     };
   }
 
@@ -88,6 +99,7 @@ class Artwork {
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       thumbnailPath: json['thumbnailPath'] as String?,
+      prompt: json['prompt'] as String?,
     );
   }
 }

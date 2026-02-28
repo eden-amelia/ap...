@@ -28,7 +28,11 @@ class ArtCatApp extends StatelessWidget {
         initialRoute: '/',
         routes: {
           '/': (context) => const HomeScreen(),
-          '/canvas': (context) => const CanvasScreen(),
+          '/canvas': (context) {
+            final prompt =
+                ModalRoute.of(context)?.settings.arguments as String?;
+            return CanvasScreen(artPrompt: prompt);
+          },
           '/prompts': (context) => const PromptScreen(),
           '/gallery': (context) => const GalleryScreen(),
         },

@@ -46,9 +46,10 @@ class CanvasProvider extends ChangeNotifier {
   CanvasProvider() : _artwork = Artwork.empty(id: const Uuid().v4());
 
   /// Start a new artwork
-  void newArtwork() {
+  /// [prompt] Optional prompt when started from Art Prompts
+  void newArtwork({String? prompt}) {
     _saveToUndoStack();
-    _artwork = Artwork.empty(id: _uuid.v4());
+    _artwork = Artwork.empty(id: _uuid.v4(), prompt: prompt);
     _redoStack.clear();
     notifyListeners();
   }

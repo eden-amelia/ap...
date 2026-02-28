@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/colors.dart';
 import '../../mascot/providers/mascot_provider.dart';
-import '../../mascot/widgets/art_cat_mascot.dart';
 import '../../../shared/storage/local_storage.dart';
 import '../../../shared/widgets/help_sheet.dart';
 import '../widgets/room_menu/room_menu.dart';
@@ -54,20 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: RoomMenu(onNavigate: _navigate),
                 ),
               ],
-            ),
-
-            // Opie-style cat mascot (bottom right, Spark placement)
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: Consumer<MascotProvider>(
-                builder: (context, mascotProvider, _) => ArtCatMascot(
-                  onTap: () {
-                    mascotProvider.showContextualTooltip('welcome');
-                  },
-                  size: 64,
-                ),
-              ),
             ),
           ],
         ),

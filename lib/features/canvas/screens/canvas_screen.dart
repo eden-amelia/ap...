@@ -12,7 +12,10 @@ import '../widgets/tools_panel.dart';
 
 /// Main canvas screen for drawing
 class CanvasScreen extends StatefulWidget {
-  const CanvasScreen({super.key});
+  /// Optional prompt to display in the banner when started from Art Prompts.
+  final String? artPrompt;
+
+  const CanvasScreen({super.key, this.artPrompt});
 
   @override
   State<CanvasScreen> createState() => _CanvasScreenState();
@@ -21,6 +24,16 @@ class CanvasScreen extends StatefulWidget {
 class _CanvasScreenState extends State<CanvasScreen> {
   static const double _mascotSize = 60;
   Offset? _mascotPosition;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.artPrompt != null && widget.artPrompt!.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.read<CanvasProvider>().newArtwork(prompt: widget.artPrompt);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,20 +50,46 @@ class _CanvasScreenState extends State<CanvasScreen> {
         Scaffold(
           appBar: AppBar(
             title: Consumer<CanvasProvider>(
-              builder: (context, provider, _) => GestureDetector(
-                onTap: () => _showTitleDialog(context, provider),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      provider.artwork.title,
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.edit, size: 16),
-                  ],
-                ),
-              ),
+              builder: (context, provider, _) {
+                final hasPrompt = provider.artwork.prompt != null &&
+                    provider.artwork.prompt!.trim().isNotEmpty;
+                return GestureDetector(
+                  onTap: () => _showTitleDialog(context, provider),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            provider.artwork.title,
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.edit, size: 16),
+                        ],
+                      ),
+                      if (hasPrompt) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          provider.artwork.prompt!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: (Theme.of(context)
+                                        .appBarTheme
+                                        .foregroundColor ??
+                                    Theme.of(context).colorScheme.onPrimary)
+                                .withOpacity(0.85),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
             ),
             actions: [
               IconButton(

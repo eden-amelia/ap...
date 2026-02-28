@@ -211,6 +211,7 @@ class _ArtworkCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onSecondaryTapUp: (_) => onDelete(),
       child: Container(
         decoration: BoxDecoration(
           color: ArtCatColors.surface,
@@ -263,6 +264,20 @@ class _ArtworkCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (artwork.prompt != null &&
+                            artwork.prompt!.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              artwork.prompt!,
+                              style: const TextStyle(
+                                color: ArtCatColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         Text(
                           _formatDate(artwork.updatedAt),
                           style: const TextStyle(

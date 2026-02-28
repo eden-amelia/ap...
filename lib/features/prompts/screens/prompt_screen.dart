@@ -122,7 +122,11 @@ class PromptScreen extends StatelessWidget {
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pushNamed(context, '/canvas');
+                          Navigator.pushNamed(
+                            context,
+                            '/canvas',
+                            arguments: promptProvider.currentPrompt.fullText,
+                          );
                         },
                         icon: const Icon(Icons.brush),
                         label: const Text('Start Drawing'),

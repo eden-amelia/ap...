@@ -7,6 +7,14 @@ import 'tooltip_bubble.dart';
 /// Placement of the tooltip bubble relative to the cat mascot
 enum _BubblePlacement { left, right, top, bottom }
 
+/// Visual variant of the mascot
+enum MascotPose {
+  /// Circular head/avatar - for floating overlays
+  avatar,
+  /// Full-body sitting cat - for room floor, etc.
+  sitting,
+}
+
 /// Bubble dimensions for layout - must match TooltipBubble
 const double _bubbleMaxWidth = 240;
 const double _bubbleGap = 8;
@@ -16,6 +24,8 @@ const double _bubbleEstHeight = 120;
 class ArtCatMascot extends StatefulWidget {
   final VoidCallback? onTap;
   final double size;
+  /// Avatar = head only; sitting = full cat on floor
+  final MascotPose pose;
   /// True when parent uses [Positioned] with left/top (e.g. canvas). Keeps cat fixed when bubble expands.
   final bool positionedByLeadingEdge;
   /// Optional pan callbacks for draggable mascot (e.g. canvas). When set, pan is applied only to the cat
@@ -27,6 +37,7 @@ class ArtCatMascot extends StatefulWidget {
     super.key,
     this.onTap,
     this.size = 60,
+    this.pose = MascotPose.avatar,
     this.positionedByLeadingEdge = false,
     this.onPanStart,
     this.onPanUpdate,
@@ -40,8 +51,9 @@ class _ArtCatMascotState extends State<ArtCatMascot> {
   final GlobalKey _mascotKey = GlobalKey();
 
   (double, double, Offset, Offset) _expandedLayout(_BubblePlacement placement) {
+    final mascotH = widget.pose == MascotPose.sitting ? widget.size * 1.15 : widget.size;
     final w = widget.size + _bubbleGap + _bubbleMaxWidth;
-    final h = widget.size + _bubbleGap + _bubbleEstHeight;
+    final h = mascotH + _bubbleGap + _bubbleEstHeight;
     switch (placement) {
       case _BubblePlacement.right:
       case _BubblePlacement.bottom:
@@ -61,11 +73,12 @@ class _ArtCatMascotState extends State<ArtCatMascot> {
       return _BubblePlacement.left;
     }
     final pos = box.localToGlobal(Offset.zero);
-    final catSize = widget.size;
+    final catW = box.size.width;
+    final catH = box.size.height;
     final spaceLeft = pos.dx;
-    final spaceRight = screenSize.width - pos.dx - catSize;
+    final spaceRight = screenSize.width - pos.dx - catW;
     final spaceTop = pos.dy;
-    final spaceBottom = screenSize.height - pos.dy - catSize;
+    final spaceBottom = screenSize.height - pos.dy - catH;
 
     final maxHorizontal = spaceLeft > spaceRight ? spaceLeft : spaceRight;
     final maxVertical = spaceTop > spaceBottom ? spaceTop : spaceBottom;
@@ -95,9 +108,10 @@ class _ArtCatMascotState extends State<ArtCatMascot> {
             : _BubblePlacement.right;
 
         // When bubble is visible, expand bounds so bubble is within hit area and has space for text
+        final mascotH = widget.pose == MascotPose.sitting ? widget.size * 1.15 : widget.size;
         final (width, height, catOffset, translate) = showBubble
             ? _expandedLayout(placement)
-            : (widget.size, widget.size, Offset.zero, Offset.zero);
+            : (widget.size, mascotH, Offset.zero, Offset.zero);
 
         final stack = SizedBox(
           width: width,
@@ -120,11 +134,17 @@ class _ArtCatMascotState extends State<ArtCatMascot> {
                       widget.onTap?.call();
                     }
                   },
-                  child: _CatAvatar(
-                    size: widget.size,
-                    reaction: mascotProvider.reaction,
-                    emoji: mascotProvider.reactionEmoji,
-                  ),
+                  child: widget.pose == MascotPose.sitting
+                      ? _SittingCatAvatar(
+                          size: widget.size,
+                          reaction: mascotProvider.reaction,
+                          emoji: mascotProvider.reactionEmoji,
+                        )
+                      : _CatAvatar(
+                          size: widget.size,
+                          reaction: mascotProvider.reaction,
+                          emoji: mascotProvider.reactionEmoji,
+                        ),
                 ),
               ),
               // Tooltip bubble - positioned on optimal side with proper constraints
@@ -217,6 +237,128 @@ class _PositionedBubble extends StatelessWidget {
         );
     }
   }
+}
+
+/// Sitting cat silhouette - body, head, ears, with emoji face. For room floor placement.
+class _SittingCatAvatar extends StatelessWidget {
+  final double size;
+  final MascotReaction reaction;
+  final String emoji;
+
+  const _SittingCatAvatar({
+    required this.size,
+    required this.reaction,
+    required this.emoji,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size * 1.15,
+      child: CustomPaint(
+        painter: _SittingCatPainter(
+          primary: ArtCatColors.primary,
+          primaryDark: ArtCatColors.primaryDark,
+        ),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: size * 0.08),
+            child: Text(
+              emoji,
+              style: TextStyle(fontSize: size * 0.35),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SittingCatPainter extends CustomPainter {
+  final Color primary;
+  final Color primaryDark;
+
+  _SittingCatPainter({required this.primary, required this.primaryDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final centerX = w / 2;
+
+    // Body - rounded sitting blob (wider at bottom)
+    final bodyPath = Path()
+      ..moveTo(centerX - w * 0.28, h * 0.55)
+      ..quadraticBezierTo(centerX - w * 0.35, h * 0.75, centerX - w * 0.2, h * 0.92)
+      ..quadraticBezierTo(centerX, h * 0.98, centerX + w * 0.2, h * 0.92)
+      ..quadraticBezierTo(centerX + w * 0.35, h * 0.75, centerX + w * 0.28, h * 0.55)
+      ..quadraticBezierTo(centerX + w * 0.22, h * 0.35, centerX, h * 0.42)
+      ..quadraticBezierTo(centerX - w * 0.22, h * 0.35, centerX - w * 0.28, h * 0.55);
+    canvas.drawPath(
+      bodyPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primary, primaryDark],
+        ).createShader(Rect.fromLTWH(0, 0, w, h)),
+    );
+
+    // Head - circle
+    final headCenter = Offset(centerX, h * 0.22);
+    final headRadius = w * 0.26;
+    canvas.drawCircle(
+      headCenter,
+      headRadius,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primary, primaryDark],
+        ).createShader(Rect.fromCircle(center: headCenter, radius: headRadius)),
+    );
+
+    // Left ear
+    final earPath = Path()
+      ..moveTo(centerX - w * 0.2, h * 0.08)
+      ..lineTo(centerX - w * 0.38, h * 0.2)
+      ..lineTo(centerX - w * 0.12, h * 0.2)
+      ..close();
+    canvas.drawPath(earPath, Paint()..color = primaryDark);
+
+    // Right ear
+    final earPathR = Path()
+      ..moveTo(centerX + w * 0.2, h * 0.08)
+      ..lineTo(centerX + w * 0.38, h * 0.2)
+      ..lineTo(centerX + w * 0.12, h * 0.2)
+      ..close();
+    canvas.drawPath(earPathR, Paint()..color = primaryDark);
+
+    // Curled tail
+    final tailPath = Path()
+      ..moveTo(centerX + w * 0.28, h * 0.5)
+      ..quadraticBezierTo(centerX + w * 0.5, h * 0.35, centerX + w * 0.45, h * 0.15)
+      ..quadraticBezierTo(centerX + w * 0.4, h * 0.05, centerX + w * 0.3, h * 0.12);
+    canvas.drawPath(
+      tailPath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.1
+        ..strokeCap = StrokeCap.round
+        ..color = primaryDark,
+    );
+
+    // Shadow under cat
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(centerX, h * 0.96), width: w * 0.5, height: h * 0.06),
+      Paint()..color = Colors.black.withOpacity(0.15),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SittingCatPainter old) =>
+      old.primary != primary || old.primaryDark != primaryDark;
 }
 
 class _CatAvatar extends StatelessWidget {
