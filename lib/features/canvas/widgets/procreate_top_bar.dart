@@ -8,11 +8,14 @@ import '../providers/canvas_provider.dart';
 class ProcreateTopBar extends StatelessWidget {
   const ProcreateTopBar({
     super.key,
+    this.prompt,
     this.onBackTap,
     this.onGalleryTap,
     this.onActionsTap,
   });
 
+  /// Optional prompt to display when drawing from Art Prompts
+  final String? prompt;
   final VoidCallback? onBackTap;
   final VoidCallback? onGalleryTap;
   final VoidCallback? onActionsTap;
@@ -37,26 +40,48 @@ class ProcreateTopBar extends StatelessWidget {
           ),
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Left: Back, Gallery, Actions (Procreate editing tools)
-          _EditingTools(
-            onBackTap: onBackTap,
-            onGalleryTap: onGalleryTap,
-            onActionsTap: onActionsTap,
+          Row(
+            children: [
+              // Left: Back, Gallery, Actions (Procreate editing tools)
+              _EditingTools(
+                onBackTap: onBackTap,
+                onGalleryTap: onGalleryTap,
+                onActionsTap: onActionsTap,
+              ),
+              const Spacer(),
+              // Right: Paint, Smudge, Erase, Shape, Fill, Color
+              Consumer<CanvasProvider>(
+                builder: (context, provider, _) => _PaintingTools(
+                  selectedTool: provider.selectedTool,
+                  selectedShape: provider.selectedShape,
+                  selectedColor: provider.selectedColor,
+                  onToolSelected: provider.selectTool,
+                  onShapeSelected: provider.selectShape,
+                  onColorSelected: provider.selectColor,
+                ),
+              ),
+            ],
           ),
-          const Spacer(),
-          // Right: Paint, Smudge, Erase, Shape, Fill, Color
-          Consumer<CanvasProvider>(
-            builder: (context, provider, _) => _PaintingTools(
-              selectedTool: provider.selectedTool,
-              selectedShape: provider.selectedShape,
-              selectedColor: provider.selectedColor,
-              onToolSelected: provider.selectTool,
-              onShapeSelected: provider.selectShape,
-              onColorSelected: provider.selectColor,
+          if (prompt != null && prompt!.trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 60, right: 8),
+              child: Text(
+                prompt!,
+                style: TextStyle(
+                  color: ArtCatColors.procreateOnSurface.withOpacity(0.85),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

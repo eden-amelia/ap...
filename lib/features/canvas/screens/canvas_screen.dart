@@ -63,16 +63,25 @@ class _CanvasScreenState extends State<CanvasScreen> {
           top: 0,
           left: 0,
           right: 0,
-          child: ProcreateTopBar(
-            onBackTap: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                Navigator.pushReplacementNamed(context, '/gallery');
-              }
+          child: Consumer<CanvasProvider>(
+            builder: (context, provider, _) {
+              final prompt = provider.artwork.prompt;
+              final hasPrompt =
+                  prompt != null && prompt.trim().isNotEmpty;
+              return ProcreateTopBar(
+                prompt: hasPrompt ? prompt : null,
+                onBackTap: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/gallery');
+                  }
+                },
+                onGalleryTap: () =>
+                    Navigator.pushReplacementNamed(context, '/gallery'),
+                onActionsTap: () => _showActionsMenu(context),
+              );
             },
-            onGalleryTap: () => Navigator.pushReplacementNamed(context, '/gallery'),
-            onActionsTap: () => _showActionsMenu(context),
           ),
         ),
         // Left sidebar - brush size, opacity, modify, undo, redo
