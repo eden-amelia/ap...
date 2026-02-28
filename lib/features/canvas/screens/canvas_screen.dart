@@ -8,7 +8,8 @@ import '../../mascot/providers/mascot_provider.dart';
 import '../../mascot/widgets/art_cat_mascot.dart';
 import '../providers/canvas_provider.dart';
 import '../widgets/drawing_canvas.dart';
-import '../widgets/tools_panel.dart';
+import '../widgets/procreate_sidebar.dart';
+import '../widgets/procreate_top_bar.dart';
 
 /// Main canvas screen for drawing
 class CanvasScreen extends StatefulWidget {
@@ -38,118 +39,92 @@ class _CanvasScreenState extends State<CanvasScreen> {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
+    final topPadding = MediaQuery.paddingOf(context).top;
+    const topBarContentHeight = 56.0;
+    final topBarHeight = topPadding + topBarContentHeight;
     final defaultPos = Offset(
       screenSize.width - 16 - _mascotSize,
-      screenSize.height - 220 - _mascotSize,
+      topBarHeight + 16,
     );
     final position = _mascotPosition ?? defaultPos;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Scaffold(
-          appBar: AppBar(
-            title: Consumer<CanvasProvider>(
-              builder: (context, provider, _) {
-                final hasPrompt = provider.artwork.prompt != null &&
-                    provider.artwork.prompt!.trim().isNotEmpty;
-                return GestureDetector(
-                  onTap: () => _showTitleDialog(context, provider),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            provider.artwork.title,
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.edit, size: 16),
-                        ],
-                      ),
-                      if (hasPrompt) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          provider.artwork.prompt!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: (Theme.of(context)
-                                        .appBarTheme
-                                        .foregroundColor ??
-                                    Theme.of(context).colorScheme.onPrimary)
-                                .withOpacity(0.85),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.save),
-                onPressed: () => _saveArtwork(context),
-                tooltip: 'Save artwork',
-              ),
-              IconButton(
-                icon: const Icon(Icons.more_vert),
-                onPressed: () => _showOptionsMenu(context),
-                tooltip: 'More options',
-              ),
-            ],
-          ),
-          body: DrawingCanvas(
-            onRequestContextMenu: (globalPosition) =>
-                _showDrawingContextMenu(context, globalPosition),
-          ),
-          bottomNavigationBar: const ToolsPanel(),
+    return Scaffold(
+      backgroundColor: ArtCatColors.procreateCharcoalDark,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Procreate-style: canvas fills screen, chrome overlays
+          DrawingCanvas(
+          onRequestContextMenu: (globalPosition) =>
+              _showDrawingContextMenu(context, globalPosition),
         ),
-        // Art Cat mascot - on top of app bar and controls, draggable anywhere
+        // Top bar (left: gallery/actions, right: tools/color)
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: ProcreateTopBar(
+            onBackTap: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacementNamed(context, '/gallery');
+              }
+            },
+            onGalleryTap: () => Navigator.pushReplacementNamed(context, '/gallery'),
+            onActionsTap: () => _showActionsMenu(context),
+          ),
+        ),
+        // Left sidebar - brush size, opacity, modify, undo, redo
+        Positioned(
+          top: topBarHeight,
+          left: 0,
+          bottom: 0,
+          child: ProcreateSidebar(
+            onModifyTap: () => _showEyedropperInfo(context),
+          ),
+        ),
+        // Art Cat mascot - Procreate keeps focus on art; mascot stays for charm
         if (context.watch<MascotProvider>().mascotVisibleOnCanvas)
           Positioned(
             left: position.dx,
             top: position.dy,
             child: Consumer2<CanvasProvider, MascotProvider>(
-            builder: (context, canvasProvider, mascotProvider, _) {
-              final tooltipKeys = {
-                ToolType.pen: 'pen',
-                ToolType.pencil: 'pencil',
-                ToolType.eraser: 'eraser',
-                ToolType.shape: 'shape',
-                ToolType.fill: 'fill',
-              };
-              final key =
-                  tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
-              return ArtCatMascot(
-                size: _mascotSize,
-                positionedByLeadingEdge: true,
-                onPanStart: (_) {
-                  if (_mascotPosition == null) {
-                    setState(() => _mascotPosition = position);
-                  }
-                },
-                onPanUpdate: (details) {
-                  setState(() {
-                    final current = _mascotPosition ?? position;
-                    _mascotPosition = Offset(
-                      current.dx + details.delta.dx,
-                      current.dy + details.delta.dy,
-                    );
-                  });
-                },
-                onTap: () =>
-                    mascotProvider.showContextualTooltip(key),
-              );
-            },
+              builder: (context, canvasProvider, mascotProvider, _) {
+                final tooltipKeys = {
+                  ToolType.pen: 'pen',
+                  ToolType.pencil: 'pencil',
+                  ToolType.eraser: 'eraser',
+                  ToolType.shape: 'shape',
+                  ToolType.fill: 'fill',
+                };
+                final key =
+                    tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
+                return ArtCatMascot(
+                  size: _mascotSize,
+                  positionedByLeadingEdge: true,
+                  onPanStart: (_) {
+                    if (_mascotPosition == null) {
+                      setState(() => _mascotPosition = position);
+                    }
+                  },
+                  onPanUpdate: (details) {
+                    setState(() {
+                      final current = _mascotPosition ?? position;
+                      _mascotPosition = Offset(
+                        current.dx + details.delta.dx,
+                        current.dy + details.delta.dy,
+                      );
+                    });
+                  },
+                  onTap: () =>
+                      mascotProvider.showContextualTooltip(key),
+                );
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -257,32 +232,112 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
-  void _showOptionsMenu(BuildContext context) {
+  void _showActionsMenu(BuildContext context) {
+    final canvasProvider = context.read<CanvasProvider>();
     showModalBottomSheet(
       context: context,
+      backgroundColor: ArtCatColors.procreateCharcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: const Icon(Icons.help_outline),
-              title: const Text('Help'),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Consumer<CanvasProvider>(
+                builder: (context, provider, _) => GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showTitleDialog(context, provider);
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              provider.artwork.title,
+                              style: const TextStyle(
+                                color: ArtCatColors.procreateOnSurface,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (provider.artwork.prompt != null &&
+                                provider.artwork.prompt!.trim().isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                provider.artwork.prompt!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: ArtCatColors.procreateOnSurface
+                                      .withOpacity(0.8),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.edit,
+                        size: 20,
+                        color: ArtCatColors.procreateOnSurface.withOpacity(0.7),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Divider(color: ArtCatColors.procreateCharcoalLight),
+            _ActionsTile(
+              icon: Icons.save,
+              title: 'Save artwork',
+              onTap: () {
+                Navigator.pop(context);
+                _saveArtwork(context);
+              },
+            ),
+            _ActionsTile(
+              icon: Icons.add,
+              title: 'New canvas',
+              onTap: () {
+                canvasProvider.newArtwork();
+                Navigator.pop(context);
+              },
+            ),
+            _ActionsTile(
+              icon: Icons.straighten,
+              title: 'Brush stabilisation',
+              subtitle: '${canvasProvider.stabilisation.round()}%',
+              onTap: () {
+                Navigator.pop(context);
+                _showStabilisationSheet(context);
+              },
+            ),
+            _ActionsTile(
+              icon: Icons.delete_outline,
+              title: 'Clear canvas',
+              onTap: () {
+                Navigator.pop(context);
+                _showClearDialog(context, canvasProvider);
+              },
+            ),
+            _ActionsTile(
+              icon: Icons.help_outline,
+              title: 'Help',
               onTap: () {
                 Navigator.pop(context);
                 showHelpSheet(context);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('New canvas'),
-              onTap: () {
-                context.read<CanvasProvider>().newArtwork();
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.share),
-              title: const Text('Share artwork'),
+            _ActionsTile(
+              icon: Icons.share,
+              title: 'Share artwork',
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -290,9 +345,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.image),
-              title: const Text('Export as image'),
+            _ActionsTile(
+              icon: Icons.image,
+              title: 'Export as image',
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -303,6 +358,150 @@ class _CanvasScreenState extends State<CanvasScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showStabilisationSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ArtCatColors.procreateCharcoal,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => Consumer<CanvasProvider>(
+        builder: (context, provider, _) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Stabilisation',
+                style: TextStyle(
+                  color: ArtCatColors.procreateOnSurface,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Smooths brush strokes. Higher = smoother lines.',
+                style: TextStyle(
+                  color: ArtCatColors.procreateOnSurface.withOpacity(0.8),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: ArtCatColors.primary,
+                  thumbColor: ArtCatColors.primary,
+                ),
+                child: Slider(
+                  value: provider.stabilisation,
+                  min: 0,
+                  max: 100,
+                  onChanged: provider.setStabilisation,
+                ),
+              ),
+              Center(
+                child: Text(
+                  '${provider.stabilisation.round()}%',
+                  style: TextStyle(
+                    color: ArtCatColors.procreateOnSurface,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showClearDialog(BuildContext context, CanvasProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ArtCatColors.procreateCharcoal,
+        title: Text(
+          'Clear canvas?',
+          style: const TextStyle(color: ArtCatColors.procreateOnSurface),
+        ),
+        content: Text(
+          'This will remove all your strokes. You can undo this action.',
+          style: TextStyle(
+            color: ArtCatColors.procreateOnSurface.withOpacity(0.9),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: ArtCatColors.procreateOnSurface),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              provider.clearCanvas();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ArtCatColors.primary,
+            ),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEyedropperInfo(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Eyedropper: tap on the canvas to pick a colour (coming soon)',
+        ),
+        backgroundColor: ArtCatColors.procreateCharcoalLight,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+class _ActionsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  const _ActionsTile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: ArtCatColors.procreateOnSurface),
+      title: Text(
+        title,
+        style: const TextStyle(color: ArtCatColors.procreateOnSurface),
+      ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: TextStyle(
+                color: ArtCatColors.procreateOnSurface.withOpacity(0.7),
+                fontSize: 12,
+              ),
+            )
+          : null,
+      onTap: onTap,
     );
   }
 }

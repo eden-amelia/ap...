@@ -73,16 +73,8 @@ class _ContinuousRoomPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Back wall - full width gradient
-    final wallPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          ArtCatColors.sparkLavender.withValues(alpha: 0.6),
-          ArtCatColors.sparkBg,
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, roomWidth, height));
+    // Back wall - white
+    final wallPaint = Paint()..color = Colors.white;
     canvas.drawRect(Rect.fromLTWH(0, 0, roomWidth, height), wallPaint);
 
     // Floor - perspective trapezoid across full room
@@ -104,39 +96,6 @@ class _ContinuousRoomPainter extends CustomPainter {
           ],
         ).createShader(Rect.fromLTWH(0, 0, roomWidth, height)),
     );
-
-    // Decorative elements across the room
-    final segmentWidth = roomWidth / 3;
-    for (var i = 0; i < 3; i++) {
-      final baseX = i * segmentWidth;
-      _drawDecorativeCircle(
-        canvas,
-        Offset(baseX + segmentWidth * 0.2, height * 0.2),
-        40,
-        ArtCatColors.sparkPink.withValues(alpha: 0.2),
-      );
-      _drawDecorativeCircle(
-        canvas,
-        Offset(baseX + segmentWidth * 0.8, height * 0.25),
-        50,
-        ArtCatColors.sparkMint.withValues(alpha: 0.2),
-      );
-      _drawDecorativeCircle(
-        canvas,
-        Offset(baseX + segmentWidth * 0.5, height * 0.35),
-        35,
-        ArtCatColors.sparkPurple.withValues(alpha: 0.15),
-      );
-    }
-  }
-
-  void _drawDecorativeCircle(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    Color color,
-  ) {
-    canvas.drawCircle(center, radius, Paint()..color = color);
   }
 
   @override

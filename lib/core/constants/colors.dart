@@ -28,6 +28,13 @@ class ArtCatColors {
   static const Color canvasBackground = Color(0xFFFFFFFF);
   static const Color canvasGrid = Color(0xFFE8E8E8);
 
+  // Procreate-style dark interface (charcoal)
+  static const Color procreateCharcoal = Color(0xFF2D2D2D);
+  static const Color procreateCharcoalLight = Color(0xFF3D3D3D);
+  static const Color procreateCharcoalDark = Color(0xFF1E1E1E);
+  static const Color procreateSurface = Color(0xFF363636);
+  static const Color procreateOnSurface = Color(0xFFE8E8E8);
+
   // Status colours
   static const Color success = Color(0xFF4CAF50);
   static const Color warning = Color(0xFFFFC107);
