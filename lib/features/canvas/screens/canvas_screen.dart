@@ -65,14 +65,18 @@ class _CanvasScreenState extends State<CanvasScreen> {
               ),
             ],
           ),
-          body: const DrawingCanvas(),
+          body: DrawingCanvas(
+            onRequestContextMenu: (globalPosition) =>
+                _showDrawingContextMenu(context, globalPosition),
+          ),
           bottomNavigationBar: const ToolsPanel(),
         ),
         // Art Cat mascot - on top of app bar and controls, draggable anywhere
-        Positioned(
-          left: position.dx,
-          top: position.dy,
-          child: Consumer2<CanvasProvider, MascotProvider>(
+        if (context.watch<MascotProvider>().mascotVisibleOnCanvas)
+          Positioned(
+            left: position.dx,
+            top: position.dy,
+            child: Consumer2<CanvasProvider, MascotProvider>(
             builder: (context, canvasProvider, mascotProvider, _) {
               final tooltipKeys = {
                 ToolType.pen: 'pen',
@@ -166,6 +170,51 @@ class _CanvasScreenState extends State<CanvasScreen> {
           },
         ),
       ),
+    );
+  }
+
+  void _showDrawingContextMenu(
+    BuildContext context,
+    Offset globalPosition,
+  ) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final mascotProvider = context.read<MascotProvider>();
+    final position = RelativeRect.fromLTRB(
+      globalPosition.dx,
+      globalPosition.dy,
+      screenSize.width - globalPosition.dx,
+      screenSize.height - globalPosition.dy,
+    );
+
+    showMenu<void>(
+      context: context,
+      position: position,
+      items: [
+        PopupMenuItem<void>(
+          onTap: () {
+            mascotProvider.setMascotVisibleOnCanvas(
+              !mascotProvider.mascotVisibleOnCanvas,
+            );
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                mascotProvider.mascotVisibleOnCanvas
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                mascotProvider.mascotVisibleOnCanvas
+                    ? 'Hide mascot'
+                    : 'Show mascot',
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

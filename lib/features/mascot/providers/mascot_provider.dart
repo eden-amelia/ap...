@@ -17,6 +17,17 @@ class MascotProvider extends ChangeNotifier {
   bool _tooltipsEnabled = true;
   bool get tooltipsEnabled => _tooltipsEnabled;
 
+  bool _mascotVisibleOnCanvas = true;
+  bool get mascotVisibleOnCanvas => _mascotVisibleOnCanvas;
+
+  /// Show or hide the mascot on the canvas (drawing) screen
+  void setMascotVisibleOnCanvas(bool visible) {
+    if (_mascotVisibleOnCanvas != visible) {
+      _mascotVisibleOnCanvas = visible;
+      notifyListeners();
+    }
+  }
+
   /// Set the mascot's reaction
   void setReaction(MascotReaction reaction) {
     _reaction = reaction;

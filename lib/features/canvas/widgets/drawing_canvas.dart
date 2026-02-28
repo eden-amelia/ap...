@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/colors.dart';
@@ -10,7 +12,14 @@ import '../providers/canvas_provider.dart';
 /// Procreate-style drawing canvas with smooth strokes, pressure sensitivity,
 /// and two-finger tap to undo
 class DrawingCanvas extends StatefulWidget {
-  const DrawingCanvas({super.key});
+  const DrawingCanvas({
+    super.key,
+    this.onRequestContextMenu,
+  });
+
+  /// Called when the user right-clicks (mouse) or long-presses (touch)
+  /// with the global position where the menu should appear
+  final void Function(Offset globalPosition)? onRequestContextMenu;
 
   @override
   State<DrawingCanvas> createState() => _DrawingCanvasState();
@@ -23,6 +32,15 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
   DateTime? _twoFingerDownTime;
   Offset? _lastPoint;
   DateTime? _lastMoveTime;
+  Timer? _longPressTimer;
+  int? _longPressPointer;
+  static const _longPressThresholdMs = 500;
+
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +73,14 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
   ) {
     _activePointers.add(event.pointer);
 
+    // Right-click (mouse): show context menu, don't start drawing
+    final isSecondaryMouseButton = event.kind == PointerDeviceKind.mouse &&
+        (event.buttons & kSecondaryMouseButton) != 0;
+    if (isSecondaryMouseButton && widget.onRequestContextMenu != null) {
+      _showContextMenuAt(context, event.localPosition);
+      return;
+    }
+
     if (_activePointers.length == 2 && _drawingPointer == null) {
       _twoFingerDownTime = DateTime.now();
       _pointersWhenTwoFingerStarted = 2;
@@ -66,10 +92,58 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
       _lastMoveTime = DateTime.now();
       final pressure = _getPressure(event);
       provider.startStroke(event.localPosition, pressure: pressure);
+
+      // Start long-press timer for touch devices
+      if (event.kind == PointerDeviceKind.touch &&
+          widget.onRequestContextMenu != null) {
+        _longPressPointer = event.pointer;
+        _longPressTimer = Timer(
+          const Duration(milliseconds: _longPressThresholdMs),
+          () => _onLongPressFired(context, event.localPosition, provider),
+        );
+      }
     }
   }
 
+  void _showContextMenuAt(BuildContext context, Offset localPosition) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null) {
+      final globalPosition = box.localToGlobal(localPosition);
+      widget.onRequestContextMenu!(globalPosition);
+    }
+  }
+
+  void _onLongPressFired(
+    BuildContext context,
+    Offset localPosition,
+    CanvasProvider provider,
+  ) {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
+    if (_longPressPointer == null) return;
+
+    provider.endStroke();
+    if (provider.canUndo) {
+      provider.undo();
+    }
+    _drawingPointer = null;
+    _lastPoint = null;
+    _lastMoveTime = null;
+
+    _showContextMenuAt(context, localPosition);
+    _longPressPointer = null;
+  }
+
   void _handlePointerMove(PointerMoveEvent event, CanvasProvider provider) {
+    if (event.pointer == _longPressPointer && _lastPoint != null) {
+      final dx = event.localPosition.dx - _lastPoint!.dx;
+      final dy = event.localPosition.dy - _lastPoint!.dy;
+      if (dx * dx + dy * dy > 100) {
+        _longPressTimer?.cancel();
+        _longPressTimer = null;
+        _longPressPointer = null;
+      }
+    }
     if (event.pointer == _drawingPointer) {
       final pressure = _getPressure(event);
       double? velocity;
@@ -94,6 +168,11 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
     PointerEvent event,
     CanvasProvider provider,
   ) {
+    if (event.pointer == _longPressPointer) {
+      _longPressTimer?.cancel();
+      _longPressTimer = null;
+      _longPressPointer = null;
+    }
     if (event.pointer == _drawingPointer) {
       provider.endStroke();
       _drawingPointer = null;
