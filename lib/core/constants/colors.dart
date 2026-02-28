@@ -33,6 +33,16 @@ class ArtCatColors {
   static const Color warning = Color(0xFFFFC107);
   static const Color error = Color(0xFFE53935);
 
+  // Spark-inspired palette (Moriah Elizabeth aesthetic - pastel, whimsical)
+  static const Color sparkPurple = Color(0xFFB8A4E8);
+  static const Color sparkPurpleDark = Color(0xFF9B7EDE);
+  static const Color sparkPink = Color(0xFFFFB5C5);
+  static const Color sparkMint = Color(0xFFB8E8D4);
+  static const Color sparkPeach = Color(0xFFFFD4B8);
+  static const Color sparkYellow = Color(0xFFFFF4B8);
+  static const Color sparkLavender = Color(0xFFE8D8FF);
+  static const Color sparkBg = Color(0xFFFFF8FC);  // Soft pink-tinted cream
+
   // Drawing palette - basic colours
   static const List<Color> basicPalette = [
     Color(0xFF000000),  // Black
