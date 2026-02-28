@@ -4,89 +4,218 @@ import '../../../core/constants/colors.dart';
 import '../providers/mascot_provider.dart';
 import 'tooltip_bubble.dart';
 
+/// Placement of the tooltip bubble relative to the cat mascot
+enum _BubblePlacement { left, right, top, bottom }
+
+/// Bubble dimensions for layout - must match TooltipBubble
+const double _bubbleMaxWidth = 240;
+const double _bubbleGap = 8;
+const double _bubbleEstHeight = 120;
+
 /// The Art Cat mascot widget - an interactive cat character
 class ArtCatMascot extends StatefulWidget {
   final VoidCallback? onTap;
   final double size;
+  /// True when parent uses [Positioned] with left/top (e.g. canvas). Keeps cat fixed when bubble expands.
+  final bool positionedByLeadingEdge;
+  /// Optional pan callbacks for draggable mascot (e.g. canvas). When set, pan is applied only to the cat
+  /// so the bubble can receive taps.
+  final void Function(DragStartDetails)? onPanStart;
+  final void Function(DragUpdateDetails)? onPanUpdate;
 
   const ArtCatMascot({
     super.key,
     this.onTap,
     this.size = 60,
+    this.positionedByLeadingEdge = false,
+    this.onPanStart,
+    this.onPanUpdate,
   });
 
   @override
   State<ArtCatMascot> createState() => _ArtCatMascotState();
 }
 
-class _ArtCatMascotState extends State<ArtCatMascot>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _bounceController;
-  late Animation<double> _bounceAnimation;
+class _ArtCatMascotState extends State<ArtCatMascot> {
+  final GlobalKey _mascotKey = GlobalKey();
 
-  @override
-  void initState() {
-    super.initState();
-    _bounceController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _bounceAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
-    );
+  (double, double, Offset, Offset) _expandedLayout(_BubblePlacement placement) {
+    final w = widget.size + _bubbleGap + _bubbleMaxWidth;
+    final h = widget.size + _bubbleGap + _bubbleEstHeight;
+    switch (placement) {
+      case _BubblePlacement.right:
+      case _BubblePlacement.bottom:
+        return (w, h, Offset.zero, Offset.zero);
+      case _BubblePlacement.left:
+        final t = widget.positionedByLeadingEdge ? Offset(-(w - widget.size), 0) : Offset.zero;
+        return (w, h, Offset(w - widget.size, 0), t);
+      case _BubblePlacement.top:
+        final t = widget.positionedByLeadingEdge ? Offset(0, -(h - widget.size)) : Offset.zero;
+        return (w, h, Offset(0, h - widget.size), t);
+    }
   }
 
-  @override
-  void dispose() {
-    _bounceController.dispose();
-    super.dispose();
-  }
+  _BubblePlacement _choosePlacement(Size screenSize) {
+    final box = _mascotKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      return _BubblePlacement.left;
+    }
+    final pos = box.localToGlobal(Offset.zero);
+    final catSize = widget.size;
+    final spaceLeft = pos.dx;
+    final spaceRight = screenSize.width - pos.dx - catSize;
+    final spaceTop = pos.dy;
+    final spaceBottom = screenSize.height - pos.dy - catSize;
 
-  void _handleTap() {
-    _bounceController.forward().then((_) => _bounceController.reverse());
-    widget.onTap?.call();
+    final maxHorizontal = spaceLeft > spaceRight ? spaceLeft : spaceRight;
+    final maxVertical = spaceTop > spaceBottom ? spaceTop : spaceBottom;
+
+    if (maxHorizontal >= maxVertical) {
+      return spaceRight >= spaceLeft ? _BubblePlacement.right : _BubblePlacement.left;
+    } else {
+      return spaceBottom >= spaceTop ? _BubblePlacement.bottom : _BubblePlacement.top;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<MascotProvider>(
       builder: (context, mascotProvider, child) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // Tooltip bubble
-            if (mascotProvider.isTooltipVisible &&
-                mascotProvider.currentTooltip != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: TooltipBubble(
-                  tooltip: mascotProvider.currentTooltip!,
-                  onDismiss: mascotProvider.hideTooltip,
+        final showBubble = mascotProvider.isTooltipVisible &&
+            mascotProvider.currentTooltip != null;
+
+        if (showBubble) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() {});
+          });
+        }
+
+        final placement = showBubble
+            ? _choosePlacement(MediaQuery.sizeOf(context))
+            : _BubblePlacement.right;
+
+        // When bubble is visible, expand bounds so bubble is within hit area and has space for text
+        final (width, height, catOffset, translate) = showBubble
+            ? _expandedLayout(placement)
+            : (widget.size, widget.size, Offset.zero, Offset.zero);
+
+        final stack = SizedBox(
+          width: width,
+          height: height,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Cat mascot - positioned so it stays visually fixed
+              Positioned(
+                left: catOffset.dx,
+                top: catOffset.dy,
+                child: GestureDetector(
+                  key: _mascotKey,
+                  onPanStart: widget.onPanStart,
+                  onPanUpdate: widget.onPanUpdate,
+                  onTap: () {
+                    if (showBubble) {
+                      mascotProvider.hideTooltip();
+                    } else {
+                      widget.onTap?.call();
+                    }
+                  },
+                  child: _CatAvatar(
+                    size: widget.size,
+                    reaction: mascotProvider.reaction,
+                    emoji: mascotProvider.reactionEmoji,
+                  ),
                 ),
               ),
-            // Cat mascot
-            GestureDetector(
-              onTap: _handleTap,
-              child: AnimatedBuilder(
-                animation: _bounceAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _bounceAnimation.value,
-                    child: child,
-                  );
-                },
-                child: _CatAvatar(
-                  size: widget.size,
-                  reaction: mascotProvider.reaction,
-                  emoji: mascotProvider.reactionEmoji,
+              // Tooltip bubble - positioned on optimal side with proper constraints
+              if (showBubble)
+                _PositionedBubble(
+                  placement: placement,
+                  catSize: widget.size,
+                  catOffset: catOffset,
+                  child: TooltipBubble(
+                    tooltip: mascotProvider.currentTooltip!,
+                    onDismiss: mascotProvider.hideTooltip,
+                  ),
                 ),
-              ),
-            ),
-          ],
+            ],
+          ),
         );
+
+        return translate != Offset.zero
+            ? Transform.translate(offset: translate, child: stack)
+            : stack;
       },
     );
+  }
+}
+
+/// Positions the bubble adjacent to the cat based on placement
+class _PositionedBubble extends StatelessWidget {
+  final _BubblePlacement placement;
+  final double catSize;
+  final Offset catOffset;
+  final Widget child;
+
+  const _PositionedBubble({
+    required this.placement,
+    required this.catSize,
+    required this.catOffset,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const gap = 8.0;
+    // Ensure bubble has bounded width for text wrapping
+    final constrainedChild = SizedBox(
+      width: _bubbleMaxWidth,
+      child: child,
+    );
+    switch (placement) {
+      case _BubblePlacement.right:
+        return Positioned(
+          left: catOffset.dx + catSize + gap,
+          top: catOffset.dy,
+          bottom: 0,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: constrainedChild,
+          ),
+        );
+      case _BubblePlacement.left:
+        return Positioned(
+          left: 0,
+          right: catSize + gap,
+          top: catOffset.dy,
+          bottom: 0,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: constrainedChild,
+          ),
+        );
+      case _BubblePlacement.bottom:
+        return Positioned(
+          top: catOffset.dy + catSize + gap,
+          left: 0,
+          right: 0,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: constrainedChild,
+          ),
+        );
+      case _BubblePlacement.top:
+        return Positioned(
+          top: 0,
+          bottom: catSize + gap,
+          left: 0,
+          right: 0,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: constrainedChild,
+          ),
+        );
+    }
   }
 }
 

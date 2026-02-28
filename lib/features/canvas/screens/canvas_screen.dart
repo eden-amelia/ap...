@@ -24,103 +24,89 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Consumer<CanvasProvider>(
-          builder: (context, provider, _) => GestureDetector(
-            onTap: () => _showTitleDialog(context, provider),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  provider.artwork.title,
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.edit, size: 16),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () => _saveArtwork(context),
-            tooltip: 'Save artwork',
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () => _showOptionsMenu(context),
-            tooltip: 'More options',
-          ),
-        ],
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, constraints.maxHeight);
-          final defaultPos = Offset(
-            size.width - 16 - _mascotSize,
-            size.height - 220 - _mascotSize,
-          );
-          final position = _mascotPosition ?? defaultPos;
-          final clampedLeft =
-              position.dx.clamp(0.0, size.width - _mascotSize);
-          final clampedTop = position.dy.clamp(0.0, size.height - _mascotSize);
+    final screenSize = MediaQuery.sizeOf(context);
+    final defaultPos = Offset(
+      screenSize.width - 16 - _mascotSize,
+      screenSize.height - 220 - _mascotSize,
+    );
+    final position = _mascotPosition ?? defaultPos;
 
-          return Stack(
-            children: [
-              // Drawing canvas - fills the stack, receives pointer events
-              const Positioned.fill(
-                child: DrawingCanvas(),
-              ),
-              // Art Cat mascot - draggable, only this small area blocks touches
-              Positioned(
-                left: clampedLeft,
-                top: clampedTop,
-                child: GestureDetector(
-                  onPanStart: (_) {
-                    if (_mascotPosition == null) {
-                      setState(() =>
-                          _mascotPosition = Offset(clampedLeft, clampedTop));
-                    }
-                  },
-                  onPanUpdate: (details) {
-                    setState(() {
-                      final current =
-                          _mascotPosition ?? Offset(clampedLeft, clampedTop);
-                      _mascotPosition = Offset(
-                        (current.dx + details.delta.dx)
-                            .clamp(0.0, size.width - _mascotSize),
-                        (current.dy + details.delta.dy)
-                            .clamp(0.0, size.height - _mascotSize),
-                      );
-                    });
-                  },
-                  child: Consumer2<CanvasProvider, MascotProvider>(
-                    builder: (context, canvasProvider, mascotProvider, _) {
-                      final tooltipKeys = {
-                        ToolType.pen: 'pen',
-                        ToolType.pencil: 'pencil',
-                        ToolType.eraser: 'eraser',
-                        ToolType.shape: 'shape',
-                        ToolType.fill: 'fill',
-                      };
-                      final key =
-                          tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
-                      return ArtCatMascot(
-                        size: _mascotSize,
-                        onTap: () =>
-                            mascotProvider.showContextualTooltip(key),
-                      );
-                    },
-                  ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: Consumer<CanvasProvider>(
+              builder: (context, provider, _) => GestureDetector(
+                onTap: () => _showTitleDialog(context, provider),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      provider.artwork.title,
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.edit, size: 16),
+                  ],
                 ),
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.save),
+                onPressed: () => _saveArtwork(context),
+                tooltip: 'Save artwork',
+              ),
+              IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () => _showOptionsMenu(context),
+                tooltip: 'More options',
               ),
             ],
-          );
-        },
-      ),
-      bottomNavigationBar: const ToolsPanel(),
+          ),
+          body: const DrawingCanvas(),
+          bottomNavigationBar: const ToolsPanel(),
+        ),
+        // Art Cat mascot - on top of app bar and controls, draggable anywhere
+        Positioned(
+          left: position.dx,
+          top: position.dy,
+          child: Consumer2<CanvasProvider, MascotProvider>(
+            builder: (context, canvasProvider, mascotProvider, _) {
+              final tooltipKeys = {
+                ToolType.pen: 'pen',
+                ToolType.pencil: 'pencil',
+                ToolType.eraser: 'eraser',
+                ToolType.shape: 'shape',
+                ToolType.fill: 'fill',
+              };
+              final key =
+                  tooltipKeys[canvasProvider.selectedTool] ?? 'canvas';
+              return ArtCatMascot(
+                size: _mascotSize,
+                positionedByLeadingEdge: true,
+                onPanStart: (_) {
+                  if (_mascotPosition == null) {
+                    setState(() => _mascotPosition = position);
+                  }
+                },
+                onPanUpdate: (details) {
+                  setState(() {
+                    final current = _mascotPosition ?? position;
+                    _mascotPosition = Offset(
+                      current.dx + details.delta.dx,
+                      current.dy + details.delta.dy,
+                    );
+                  });
+                },
+                onTap: () =>
+                    mascotProvider.showContextualTooltip(key),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

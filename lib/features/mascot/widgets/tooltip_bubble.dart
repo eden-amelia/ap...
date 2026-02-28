@@ -13,12 +13,15 @@ class TooltipBubble extends StatelessWidget {
     required this.onDismiss,
   });
 
+  static const double _maxBubbleWidth = 240;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onDismiss,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 240),
+        constraints: const BoxConstraints(maxWidth: _maxBubbleWidth),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: ArtCatColors.surface,
@@ -50,6 +53,8 @@ class TooltipBubble extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       color: ArtCatColors.textPrimary,
                     ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
                 GestureDetector(
@@ -69,6 +74,8 @@ class TooltipBubble extends StatelessWidget {
                 fontSize: 14,
                 color: ArtCatColors.textSecondary,
               ),
+              softWrap: true,
+              overflow: TextOverflow.clip,
             ),
           ],
         ),
