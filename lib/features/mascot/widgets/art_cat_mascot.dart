@@ -253,6 +253,12 @@ class _SittingCatAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final h = size * 1.15;
+    // Head is drawn at h * 0.22; place emoji face on the head (not neck)
+    final headCenterY = h * 0.22;
+    final emojiHeight = size * 0.4;
+    final faceTop = headCenterY - emojiHeight / 2;
+
     return SizedBox(
       width: size,
       height: size * 1.15,
@@ -261,14 +267,20 @@ class _SittingCatAvatar extends StatelessWidget {
           primary: ArtCatColors.primary,
           primaryDark: ArtCatColors.primaryDark,
         ),
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: size * 0.08),
-            child: Text(
-              emoji,
-              style: TextStyle(fontSize: size * 0.35),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              top: faceTop,
+              child: Center(
+                child: Text(
+                  emoji,
+                  style: TextStyle(fontSize: size * 0.35),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
