@@ -254,8 +254,8 @@ class _SittingCatAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = size * 1.15;
-    // Head is drawn at h * 0.22; place emoji face on the head (not neck)
-    final headCenterY = h * 0.22;
+    // Head is drawn at h * 0.22; place emoji face clearly on the head (higher so not on neck)
+    final headCenterY = h * 0.16;
     final emojiHeight = size * 0.4;
     final faceTop = headCenterY - emojiHeight / 2;
 
