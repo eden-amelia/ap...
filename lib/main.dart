@@ -1,16 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app.dart';
 import 'shared/storage/local_storage.dart';
 
 void main() async {
-  // Ensure Flutter is initialised
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialise local storage
+  runZonedGuarded(() async {
+    await _init();
+    runApp(const ArtCatApp());
+  }, (error, stack) {
+    // Surface startup errors when running from terminal (e.g. flutter run -d linux)
+    debugPrint('Uncaught error: $error');
+    debugPrint(stack.toString());
+  });
+}
+
+Future<void> _init() async {
   await LocalStorage.init();
 
-  // Set preferred orientations
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -18,13 +28,10 @@ void main() async {
     DeviceOrientation.landscapeRight,
   ]);
 
-  // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
     ),
   );
-
-  runApp(const ArtCatApp());
 }

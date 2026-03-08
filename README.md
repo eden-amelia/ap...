@@ -53,10 +53,13 @@ flutter pub get
 
 3. Run the app:
 ```bash
-# For web
+# For web (runs in browser)
 flutter run -d chrome
 
-# For desktop (Linux)
+# For web when Chrome isn't available (e.g. WSL2) – opens a URL to use in any browser
+flutter run -d web-server
+
+# For desktop (Linux) – app opens in a native window (ignore the printed URL; it's for DevTools)
 flutter run -d linux
 
 # For Android (if device connected)
@@ -65,6 +68,12 @@ flutter run -d android
 # For iOS (on macOS)
 flutter run -d ios
 ```
+
+**Note:** With `flutter run -d linux`, the app runs in a **desktop window**, not in the browser. The URL Flutter prints (e.g. `http://127.0.0.1:port/...`) is the Dart VM Service for debugging and hot reload—opening it in a browser shows a blank page. To use the app in the browser, run `flutter run -d chrome` instead.
+
+**WSL2:** On WSL2 there is usually no Linux display server, so `flutter run -d linux` may start but no window appears. Chrome may not be detected as a device. Use **`flutter run -d web-server`** instead: it starts a local server and prints a URL—open that URL in any browser (e.g. Chrome or Edge on Windows). Alternatively use **`flutter run -d chrome`** if Chrome is installed inside WSL.
+
+**WSL2 segfault (cursor theme):** If the Linux app crashes with "Segmentation fault" and "Unable to load from the cursor theme", GTK is failing to load the cursor theme and the process exits before the window is usable. Workarounds: (1) **Prefer web:** run `flutter run -d chrome`. (2) **Fix cursor theme:** install a full cursor theme (e.g. `sudo apt install adwaita-icon-theme`) and set `export XCURSOR_THEME=Adwaita` before `flutter run -d linux`. (3) **Try without Impeller:** run `flutter run -d linux --no-enable-impeller` in case the crash is in the Impeller renderer.
 
 ### Building
 
